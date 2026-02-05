@@ -1,4 +1,4 @@
-# Agentfile
+# Clawdfile
 
 **File-First Agent Orchestration**
 
@@ -15,9 +15,9 @@ Markdown you can read. Files you can inspect. Agents that don't loop forever.
 
 ---
 
-## Why Agentfile?
+## Why Clawdfile?
 
-| Problem | LangGraph | Swarm | Agentfile |
+| Problem | LangGraph | Swarm | Clawdfile |
 |---------|-----------|-------|-----------|
 | **Debugging** | LangSmith (paid, vendor lock-in) | No logs, state in memory | `cat state.yaml` |
 | **State persistence** | Redis/Postgres setup | None (in-memory only) | YAML files, git-friendly |
@@ -27,7 +27,7 @@ Markdown you can read. Files you can inspect. Agents that don't loop forever.
 
 **One-liner:** Agents you can `git blame`.
 
-> **New to Agentfile?** Check out [QUICKSTART.md](QUICKSTART.md) for a 5-minute getting started guide.
+> **New to Clawdfile?** Check out [QUICKSTART.md](QUICKSTART.md) for a 5-minute getting started guide.
 
 ---
 
@@ -44,7 +44,7 @@ Markdown you can read. Files you can inspect. Agents that don't loop forever.
 - [Interface Schema](#interface-schema-autogen-ui)
 - [Project Structure](#project-structure)
 - [Usage](#usage)
-- [When to Use Agentfile](#when-to-use-agentfile)
+- [When to Use Clawdfile](#when-to-use-clawdfile)
 - [Adoption Path](#adoption-path)
 - [Principles (TL;DR)](#principles-tldr)
 
@@ -134,7 +134,7 @@ The system that lets you iterate fastest wins.
 
 ### Self-Improving System
 
-Claude Code isn't just a tool you use. Combined with Agentfile, it becomes a system that improves itself.
+Claude Code isn't just a tool you use. Combined with Clawdfile, it becomes a system that improves itself.
 
 ```
 You: "This agent is hallucinating sources"
@@ -202,7 +202,7 @@ You're building agents on Claude Code and encountering:
 - Questions like "where to store state?" and "how to resume after failure?"
 - Desire for structure, but without heavy frameworks
 
-Agentfile is a set of **conventions**, not a library. You use it as a reference and adapt it to your needs.
+Clawdfile is a set of **conventions**, not a library. You use it as a reference and adapt it to your needs.
 
 ---
 
@@ -299,7 +299,7 @@ Use a framework for everything.
 
 ---
 
-### How Agentfile Solves These Problems
+### How Clawdfile Solves These Problems
 
 | Problem | Solution |
 |---------|----------|
@@ -1008,7 +1008,7 @@ Render adapters transform to target:
 ## Project Structure
 
 ```
-agentfile/
+clawdfile/
 ├── README.md                         # This file
 ├── LICENSE                           # MIT License
 ├── QUICKSTART.md                     # Getting started guide
@@ -1079,9 +1079,9 @@ pages:
 
 ---
 
-## When to Use Agentfile
+## When to Use Clawdfile
 
-**You need Agentfile if:**
+**You need Clawdfile if:**
 - Your agent burned $50 while you were at lunch
 - You can't figure out why the pipeline failed at step 4
 - "It worked yesterday" is your debugging strategy
