@@ -1,379 +1,49 @@
 # Clawdfile
 
-**File-First Agent Orchestration**
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blue.svg)](https://claude.ai/code)
+**Operational pipelines for Claude Code**
 
 > Readable agents. Inspectable state. Predictable costs.
 
-```
-LangGraph power without LangGraph complexity.
-Swarm simplicity with actual persistence.
-Markdown you can read. Files you can inspect. Agents that don't loop forever.
-```
+Claude Code is great for tasks. But when you need multi-step pipelines — research → analyze → generate, batch processing overnight, workflows that run unattended — you hit gaps:
+
+- No state persistence between steps
+- No resume after failure
+- No coordination for parallel workers
+- No cost control
+
+Clawdfile is a set of conventions that fills these gaps. File-based state you can `cat`. Flat orchestration you can debug. Agents you can `git blame`.
 
 ---
 
-## Why Clawdfile?
+## How It Works
 
-| Problem | LangGraph | Swarm | Clawdfile |
-|---------|-----------|-------|-----------|
-| **Debugging** | LangSmith (paid, vendor lock-in) | No logs, state in memory | `cat state.yaml` |
-| **State persistence** | Redis/Postgres setup | None (in-memory only) | YAML files, git-friendly |
-| **Learning curve** | Steep, docs in flux | Minimal but no features | Markdown specs you can read |
-| **Cost control** | Manual implementation | None | Circuit breakers out of the box |
-| **Agent definitions** | Python classes + decorators | Python functions | Markdown files |
+Claude Code has architectural constraints. Clawdfile works with them:
 
-**One-liner:** Agents you can `git blame`.
+| Constraint | Why It Exists | Convention |
+|------------|---------------|------------|
+| Subagents can't spawn subagents | Forces flat hierarchy → easier debugging | Manager = Skill (ROOT reads instructions) |
+| Context is finite | Prevents runaway costs | Workers write to files, not context |
+| Model is "blind" until Read() | Explicit I/O = traceable | File-based state: `cat state.yaml` |
+| Skills are steering, not code | Flexible, not brittle | Conventions over enforcement |
 
-> **New to Clawdfile?** Check out [QUICKSTART.md](QUICKSTART.md) for a 5-minute getting started guide.
-
----
-
-## Table of Contents
-
-- [Philosophy](#philosophy)
-- [Why Claude Code](#why-claude-code)
-- [Who Is This For](#who-is-this-for)
-- [The Problem](#the-problem)
-- [Architecture](#architecture)
-- [Agent Taxonomy](#agent-taxonomy)
-- [Data Layers (L0-L3)](#data-layers-l0-l3)
-- [Orchestration (Deep Dive)](#orchestration-deep-dive)
-- [Project Structure](#project-structure)
-- [Usage](#usage)
-- [Examples](#examples)
-- [When to Use Clawdfile](#when-to-use-clawdfile)
-- [Adoption Path](#adoption-path)
-- [Principles (TL;DR)](#principles-tldr)
+**Result**: Flat orchestration, file-based state, predictable costs.
 
 ---
 
-## Philosophy
+## Before / After
 
-```
-Markdown is the new JavaScript.
-YAML is the new PostgreSQL.
-```
-
-**Markdown** is code for LLMs. Instructions, procedures, constraints. LLMs execute markdown like a runtime executes JS.
-
-**YAML** is data. Structured, versionable, human-readable. Replaces databases for most agent workflows.
-
-### Approach: Framework + Domain → Pipeline
-
-You don't write agents by hand. You:
-
-1. **Provide the framework** — conventions, schemas, templates
-2. **Provide domain knowledge** — specifics of your area (health, research, marketing)
-3. **Ask Claude to package it into a pipeline**
-
-```
-┌─────────────────┐   ┌─────────────────┐
-│   Framework     │ + │  Domain Data    │
-│   (conventions) │   │  (your context) │
-└────────┬────────┘   └────────┬────────┘
-         │                     │
-         └──────────┬──────────┘
-                    ▼
-         ┌─────────────────────┐
-         │   Claude Code       │
-         │   generates         │
-         │   pipeline          │
-         └─────────────────────┘
-                    │
-                    ▼
-         ┌─────────────────────┐
-         │  Working agents     │
-         │  + skills           │
-         │  + workflows        │
-         └─────────────────────┘
-```
-
-**Why this works:**
-
-- LLMs understand conventions better than API docs
-- Markdown templates = examples for in-context learning
-- YAML schemas = constraints for structured output
-- Framework = shared language between you and Claude
-
-**Example prompt:**
-
-```
-I have a framework (framework/README.md) and domain knowledge
-about health tracking (data/config/user_profile.yaml, training-science.md).
-
-Create a pipeline that:
-1. Reads daily log
-2. Validates against directives
-3. Generates recommendations
-
-Use framework conventions: agents, skills, data layers.
-```
-
-Claude creates:
-- `manager-daily-review.md` (orchestration skill)
-- `log-analyzer.md` (worker agent)
-- `recommendation-generator.md` (worker agent)
-- `dashboard.yaml` (interface)
-
-Everything follows conventions. Everything is compatible with other pipelines.
+| Problem | Without Clawdfile | With Clawdfile |
+|---------|-------------------|----------------|
+| Pipeline fails at step 4 | Re-run from scratch | Resume from step 4 |
+| Agent loops forever | $50 bill | Circuit breaker stops it |
+| "What happened?" | Dig through logs | `cat artifacts/state.yaml` |
+| Share with team | Copy-paste prompts | `git push` |
 
 ---
 
-## Why Claude Code
+## Core Pattern
 
-### The Core Advantage: Iteration Speed
-
-When you're building agents for tasks that have never been automated before, you're on the frontier. There's no playbook. No proven architecture. No reference implementation to copy.
-
-The only way forward is iteration: try something → see what breaks → fix it → repeat.
-
-The system that lets you iterate fastest wins.
-
-### Self-Improving System
-
-Claude Code isn't just a tool you use. Combined with Clawdfile, it becomes a system that improves itself.
-
-```
-You: "This agent is hallucinating sources"
-
-Claude Code:
-  1. Reads agent definition
-  2. Identifies the problem
-  3. Adds grounding-protocol skill
-  4. Tests the fix
-  5. Commits the change
-
-Elapsed: 2 minutes
-```
-
-The same system that runs your agents can modify your agents. No context switching. No deployment pipeline. No waiting.
-
-When you find a bug in your pipeline, you don't file a ticket. You describe it, and the system fixes itself.
-
-### Text Files = Velocity
-
-Why markdown and YAML instead of code and databases?
-
-**Immediate feedback loop:**
-```
-Edit an agent → test immediately
-No compilation. No deployment. No restart.
-```
-
-**Human-readable diffs:**
-```diff
-- model: haiku
-+ model: sonnet
-
-- max_sources: 5
-+ max_sources: 10
-```
-
-You can review agent changes like code changes. Your git history tells the story of how your agents evolved.
-
-**LLM-native format:**
-```
-Claude Code can read agent definitions.
-Claude Code can write agent definitions.
-The format is the interface.
-```
-
-No serialization. No ORM. No API layer between Claude and your agent configurations.
-
-**Version control:**
-```
-git checkout HEAD~5 -- .claude/agents/my-agent.md
-```
-
-Roll back an agent to last week's version. Branch to experiment. Merge improvements from a colleague.
-
-This is why markdown and YAML beat code and databases for agent development: they remove every obstacle between "I have an idea" and "it's running."
-
-### The Gap: Tasks vs Pipelines
-
-Claude Code excels at solving individual tasks. Give it a problem, it figures it out.
-
-But operational pipelines are different:
-- Multiple steps that must run in sequence
-- State that persists between steps
-- Failure handling and resume logic
-- Coordination of parallel workers
-
-You can describe a pipeline to Claude Code. It will execute it. Once.
-
-Next time? It's a fresh context. No memory of the previous run. No state file to resume from. No way to replay step 3 without re-running steps 1-2.
-
-**Clawdfile fills this gap:** conventions for turning ad-hoc agent execution into repeatable, resumable pipelines.
-
----
-
-## Who Is This For
-
-You're building agents on Claude Code and encountering:
-- Pipelines with multiple steps (research → analyze → generate)
-- Need to reuse knowledge between agents
-- Questions like "where to store state?" and "how to resume after failure?"
-- Desire for structure, but without heavy frameworks
-
-Clawdfile is a set of **conventions**, not a library. You use it as a reference and adapt it to your needs.
-
----
-
-## The Problem
-
-### Why Multi-Agent Systems Are Hard
-
-**1. Coordination Explosion**
-
-One agent = prompt + tools. Simple.
-
-Two agents = who calls whom? how to pass data? what if one fails?
-
-Five agents = exponential complexity. Each can affect each other.
-
-```
-Agents:     1    2    3    4    5
-Complexity: O(1) O(n) O(n²) ...
-```
-
-**2. No Agreed Patterns**
-
-In web development there's MVC, REST, microservices. Everyone understands these.
-
-In agent development:
-- Some make monolithic agents with 3000 lines
-- Some split into 50 micro-agents
-- Some write in LangChain, some in AutoGen, some in raw API
-
-No common language. No reusable patterns.
-
-**3. State Management Chaos**
-
-Where does state live between agent calls?
-
-| Option | Problem |
-|--------|---------|
-| Context window | Lost in long sessions, expensive |
-| In-memory | Lost on restart |
-| Database | Overkill, requires infrastructure |
-| Files | What format? who owns them? how to version? |
-
-**4. Debugging Hell**
-
-A pipeline of 5 agents fails on step 4.
-
-- Where exactly did it break?
-- How to reproduce?
-- How to restart from midpoint?
-- What was the intermediate data?
-
-Observability in agent systems is an unsolved industry problem.
-
-**5. Knowledge Duplication**
-
-Every agent contains copy-pasted instructions:
-- "Don't hallucinate"
-- "Verify sources"
-- "Format output as YAML"
-- "Don't use AI-typical phrases"
-
-Code reuse was solved long ago. Knowledge reuse hasn't been.
-
----
-
-### Approaches That Don't Work
-
-**Monolithic Agent**
-```
-One giant system prompt with all logic.
-```
-- Context overflow on complex tasks
-- Can't test parts individually
-- One change = risk of breaking everything
-- No parallelism
-
-**Micro-Agents**
-```
-Each action = separate agent.
-```
-- Coordination overhead
-- Context loss between calls
-- Debugging 50 agents = nightmare
-- Latency from sequential calls
-
-**Heavy Frameworks (LangChain, AutoGen)**
-```
-Use a framework for everything.
-```
-- Leaky abstractions
-- Hard to customize for your needs
-- Dependent on someone else's roadmap
-- Documentation lags behind code
-
----
-
-### How Clawdfile Solves These Problems
-
-| Problem | Solution |
-|---------|----------|
-| Coordination explosion | **Flat hierarchy**: ROOT orchestrates, Workers execute |
-| No patterns | **Taxonomy**: 4 architectural roles, 8 functional roles |
-| State chaos | **Data Layers**: L0→L1→L2→L3 with clear contracts |
-| Debugging | **File-based state**: inspect, resume, replay |
-| Knowledge duplication | **Skills**: shared libraries for instructions |
-
-**Key Insight: Convention over Configuration**
-
-Claude Code already has primitives:
-
-| Primitive | What It Does |
-|-----------|--------------|
-| Task tool | Spawn subagent |
-| Skill tool | Load knowledge pack |
-| MCP | External integrations |
-| Files | Persistent state |
-
-No need to invent a runtime. You need **conventions** for how to use these primitives together.
-
-**Architectural Constraint as Feature**
-
-```
-Claude Code: Subagents CANNOT spawn other subagents
-```
-
-This looks like a limitation, but it's a design decision:
-- Forces flat hierarchy (easier to debug)
-- ROOT = single point of control
-- Workers = pure executors (easier to test)
-
-**Skills = Knowledge Reuse**
-
-```
-Agent A + grounding-protocol = Agent A that doesn't hallucinate
-Agent B + grounding-protocol = Agent B that doesn't hallucinate
-```
-
-A Skill is not an agent. A Skill is a set of instructions loaded into context.
-This is knowledge reuse.
-
-**Files = Reliable State**
-
-```
-Why files > memory:
-✓ Inspectable (humans can read)
-✓ Versionable (git-friendly)
-✓ Resumable (restart from any point)
-✓ Testable (mock data for testing)
-```
-
----
-
-## Architecture
-
-### Mental Model (Like an OS)
+**ROOT orchestrates, Workers execute, Files persist.**
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -412,47 +82,13 @@ Why files > memory:
 └───────────────────────────────────────────┘
 ```
 
-### Key Principles
+**Key insight**: Manager is a Skill loaded into ROOT (not a separate agent). ROOT reads manager instructions and executes them directly. This is how you get orchestration despite the flat hierarchy constraint.
 
-**1. ROOT orchestrates, Workers execute**
+---
 
-ROOT (the main Claude Code process) is the only one that can:
-- Spawn subagents (Task tool)
-- Load skills (Skill tool)
-- Coordinate phases
+## Data Layers
 
-Workers are isolated executors:
-- Receive task
-- Execute
-- Write result to file
-- Terminate
-
-**2. Skills are shared libraries**
-
-A Skill is NOT an agent. A Skill is a set of instructions loaded into context.
-
-```
-Agent A + Skill X = Agent A with knowledge X
-Agent B + Skill X = Agent B with knowledge X
-```
-
-Skill types:
-| Type | Scope | Example |
-|------|-------|---------|
-| atomic | Single operation | tier-weights, slop-check |
-| composite | Combination of atomic | source-evaluation |
-| domain | Knowledge pack | training-science, grounding-protocol |
-| manager | Workflow instructions | manager-research |
-
-**3. Files are state**
-
-Everything persists to YAML files:
-- Reproducible: can restart from any point
-- Inspectable: humans can read and edit
-- Testable: can substitute mock data
-- Versionable: git-friendly
-
-**4. Layers have contracts**
+State flows through four layers:
 
 ```
 L0 (Config)      →  L1 (Directives)  →  L2 (Operational)  →  L3 (Artifacts)
@@ -460,306 +96,14 @@ user_profile.yaml   plan.yaml           aspects/*.yaml       FINAL_REPORT.md
                     directives.yaml     synthesis.yaml
 ```
 
-Contracts:
-- L1 constraints ALWAYS override L2 decisions
-- L3 artifacts MUST reference L2 sources
-- L2 CAN BE regenerated from L1 + external data
-
-**5. Manager = Skill, not Agent**
-
-Manager doesn't run as a subagent.
-Manager is a skill that ROOT reads and executes the instructions itself.
-
-Why:
-- Subagents cannot spawn subagents
-- ROOT must see the whole pipeline
-- Debugging is easier when orchestration is in one place
-
----
-
-## Agent Taxonomy
-
-### By Architectural Role
-
-| Role | Execution | Can Spawn | Purpose |
-|------|-----------|-----------|---------|
-| **commander** | ROOT | Yes | Entry point, slash commands |
-| **manager** | ROOT skill | No* | Workflow instructions |
-| **worker** | Subagent | No | Isolated task executor |
-| **utility** | Inline skill | No | Stateless procedure |
-
-*Manager = Skill loaded into ROOT, ROOT spawns workers.
-
-### By Functional Role
-
-| Role | Pattern | Example |
-|------|---------|---------|
-| explorer | Wide search → Structured output | topic-explorer |
-| researcher | Queries → Evaluate → Extract | aspect-researcher |
-| scorer | Input → Criteria → Scores | source-evaluator |
-| aggregator | N inputs → Synthesis | findings-synthesizer |
-| validator | Input → Rules → Verdict | quality-gate |
-| generator | Context → Template → Artifact | report-generator |
-| transformer | Format A → Format B | yaml-to-markdown |
-| operator | Command → State change | log-manager |
-
----
-
-## Data Layers (L0-L3)
-
-| Layer | Name | Mutability | Lifecycle | Example |
-|-------|------|------------|-----------|---------|
-| **L0** | Config | User editable | Persistent | user_profile.yaml |
-| **L1** | Directives | Agent → User approved | Session persistent | plan.yaml |
-| **L2** | Operational | Agent generated | Session scoped | aspects/*.yaml |
-| **L3** | Artifacts | Append-only | Permanent | FINAL_REPORT.md |
-
-### Layer Contracts
-
-```yaml
-L0 → L1:
-  trigger: "Strategic review"
-  process: "Analyze L0 → Generate directives → User approves"
-  validation: "L1 must not contradict L0"
-
-L1 → L2:
-  trigger: "Operational command"
-  process: "Load L1 constraints → Execute → Write L2"
-  validation: "L1 ALWAYS wins over L2 preferences"
-
-L2 → L3:
-  trigger: "Quality gate PASS"
-  process: "Aggregate L2 → Quality check → Generate artifact"
-  validation: "L3 must trace to L2 sources"
-```
-
----
-
-## Orchestration (Deep Dive)
-
-Orchestration is how ROOT coordinates execution of multi-step pipelines. This is the core part of the framework.
-
-### Constraint: Flat Hierarchy
-
-```
-                    ┌──────────────────────────────────┐
-                    │  Claude Code Constraint:         │
-                    │  Subagents CANNOT spawn          │
-                    │  other subagents                 │
-                    └──────────────────────────────────┘
-```
-
-This is not a bug, it's a feature. The constraint forces architecture:
-
-```
-✓ ROOT → Worker (allowed)
-✗ Worker → Worker (NOT allowed)
-```
-
-**Consequences:**
-- All orchestration logic lives in ROOT
-- Workers = pure executors, no coordination logic
-- Debugging is easier: single point of control
-
-### Working Around the Constraint: Manager Skills
-
-Problem: ROOT doesn't know the workflow but must orchestrate.
-
-Solution: Manager Skill = instructions for ROOT.
-
-```
-┌────────────────────────────────────────────────────┐
-│ ROOT loads manager-research.md as a Skill          │
-│                                                    │
-│ Manager Skill contains:                            │
-│ - Description of phases                            │
-│ - Gate conditions                                  │
-│ - Instructions on how to spawn workers             │
-│ - State management rules                           │
-│                                                    │
-│ ROOT reads instructions and EXECUTES THEM ITSELF   │
-│ (doesn't delegate to another agent)                │
-└────────────────────────────────────────────────────┘
-```
-
-**Manager ≠ Agent.** Manager is a knowledge pack that ROOT interprets.
-
-### Orchestration Primitives
-
-ROOT has three primitives for orchestration:
-
-**1. Task tool (spawn)**
-```
-Task(
-  subagent_type: "general-purpose",
-  prompt: "Load X agent, do Y",
-  run_in_background: true|false
-)
-→ Returns: task_id
-```
-
-**2. TaskOutput (wait)**
-```
-TaskOutput(
-  task_id: "xxx",
-  block: true
-)
-→ Returns: agent output
-```
-
-**3. Skill tool (load knowledge)**
-```
-Skill(skill: "my-skill")
-→ Loads skill instructions into ROOT context
-```
-
-### Orchestration Patterns
-
-#### Pattern 1: Fan-out (Parallel Execution)
-
-When: N independent tasks that can run in parallel.
-
-```
-ROOT reads plan.yaml (5 aspects)
-  │
-  │  ┌─────── Single message with multiple Task calls ───────┐
-  │  │                                                        │
-  │  │  Task(worker-1, background: true) → task_id_1         │
-  │  │  Task(worker-2, background: true) → task_id_2         │
-  │  │  Task(worker-3, background: true) → task_id_3         │
-  │  │  Task(worker-4, background: true) → task_id_4         │
-  │  │  Task(worker-5, background: true) → task_id_5         │
-  │  │                                                        │
-  │  └────────────────────────────────────────────────────────┘
-  │
-  │  Wait phase:
-  │  TaskOutput(task_id_1, block: true)
-  │  TaskOutput(task_id_2, block: true)
-  │  ... etc
-  │
-  ▼
-Continue to next phase
-```
-
-**Important:** All Task calls must be in ONE message for parallel execution.
-
-**Code in manager skill:**
-```markdown
-## Phase 2: Parallel Research
-
-**Orchestration:**
-For each aspect in plan.aspects:
-  Task(
-    subagent_type: "general-purpose",
-    prompt: |
-      Load aspect-researcher agent.
-      Research: {aspect.name}
-      Output: artifacts/{session}/aspects/{aspect.id}.yaml
-    run_in_background: true
-  )
-
-Wait for all tasks to complete.
-```
-
-#### Pattern 2: Pipeline (Sequential Phases)
-
-When: Each phase depends on the previous phase's result.
-
-```
-Phase 1        Gate         Phase 2        Gate         Phase 3
-┌──────┐    ┌──────┐      ┌──────┐     ┌──────┐      ┌──────┐
-│ Plan │───▶│Check │───▶  │Research│───▶│Check │───▶  │Synth │
-└──────┘    │exists│      └──────┘     │quality│      └──────┘
-    │       └──────┘          │        └──────┘           │
-    ▼                         ▼                           ▼
-plan.yaml              aspects/*.yaml              synthesis.yaml
-```
-
-**Gate = transition condition between phases:**
-```yaml
-gate:
-  type: file_exists
-  condition: "plan.yaml"
-
-gate:
-  type: quality_threshold
-  condition: "count(aspects/*.yaml) >= 3"
-
-gate:
-  type: custom
-  condition: "quality.verdict in ['PASS', 'WARN']"
-```
-
-### State Management
-
-State enables resume after interrupt. Structure:
-
-```yaml
-# artifacts/{session}/state.yaml
-session_id: "research_20260130_abc"
-workflow: "manager-research"
-current_phase: "synthesis"
-
-phase_states:
-  planning: completed
-  research: completed
-  synthesis: in_progress
-  quality_gate: pending
-  report: pending
-
-workers:
-  aspect_1: completed
-  aspect_2: completed
-  aspect_3: failed
-```
-
-**Resume:** Read state.yaml → skip completed phases → re-run failed workers only.
-
-**Error handling principles:**
-- Workers can fail independently — continue with others
-- Set minimum thresholds, not exact counts (`min_aspects: 3` not `required: 5`)
-- Phase fails only if completed < minimum
-- Always halt on phase failure, report what succeeded
-
----
-
-## Project Structure
-
-```
-.claude/agents/    # Agent definitions (markdown)
-.claude/skills/    # Skill definitions (markdown)
-artifacts/         # Runtime outputs (gitignored)
-```
-
-See `templates/` for starting points, `schemas/` for YAML conventions.
-
----
-
-## Usage
-
-### 1. Create an Agent
-
-```bash
-cp framework/templates/agents/researcher.template.md \
-   .claude/agents/my-researcher.md
-# Edit for your task
-```
-
-### 2. Create a Skill
-
-```bash
-cp framework/templates/skills/atomic.template.md \
-   .claude/skills/my-skill.md
-# Define input → procedure → output
-```
-
-### 3. Create a Workflow (Manager Skill)
-
-```bash
-cp framework/templates/skills/manager.template.md \
-   .claude/skills/manager-mypipeline.md
-# Describe phases, gates, orchestration
-```
+| Layer | What | Mutability | Example |
+|-------|------|------------|---------|
+| **L0** | User config | User-edited | `user_profile.yaml` |
+| **L1** | Session plan | Agent-generated, user-approved | `plan.yaml` |
+| **L2** | Working data | Agent-generated | `aspects/*.yaml` |
+| **L3** | Final outputs | Append-only | `FINAL_REPORT.md` |
+
+**Contract**: L1 constraints always override L2 decisions. L3 must trace to L2 sources.
 
 ---
 
@@ -767,105 +111,167 @@ cp framework/templates/skills/manager.template.md \
 
 ### Research Pipeline
 
-Multi-phase research with parallel workers and quality gates.
+Semantic decomposition → parallel research → synthesis.
 
 ```
-┌─────────────┐     ┌─────────────────┐     ┌───────────┐
-│  Planning   │────▶│ Parallel Research│────▶│ Synthesis │
-│  (planner)  │     │ (N researchers)  │     │           │
-└─────────────┘     └─────────────────┘     └─────┬─────┘
-                                                  │
-                    ┌─────────────────┐     ┌─────▼─────┐
-                    │  Report Gen     │◀────│  Quality  │
-                    │  (generator)    │     │   Gate    │
-                    └─────────────────┘     └───────────┘
+┌─────────────┐     ┌─────────────────┐     ┌───────────┐     ┌───────────┐
+│  Planning   │────▶│ Parallel Research│────▶│ Synthesis │────▶│  Report   │
+│  (1 agent)  │     │   (N agents)     │     │ (1 agent) │     │           │
+└─────────────┘     └─────────────────┘     └───────────┘     └───────────┘
+      │                     │                     │                 │
+      ▼                     ▼                     ▼                 ▼
+  plan.yaml           aspects/*.yaml        synthesis.yaml    FINAL_REPORT.md
 ```
 
-| Phase | Input | Output |
-|-------|-------|--------|
-| Planning | topic | plan.yaml |
-| Research ×N | plan.aspects | aspects/*.yaml |
-| Synthesis | aspects/*.yaml | synthesis.yaml |
-| Quality | synthesis.yaml | quality.yaml |
-| Report | synthesis.yaml | FINAL_REPORT.md |
+**State file enables resume**:
+```yaml
+# artifacts/{session}/state.yaml
+current_phase: synthesis
+phase_states:
+  planning: completed
+  research: completed
+  synthesis: in_progress
+workers:
+  aspect_1: completed
+  aspect_2: completed
+  aspect_3: failed  # ← Resume re-runs only this
+```
 
-**Key concepts:** Manager skill orchestration, fan-out parallelism, sequential gates, file-based resume.
-
-→ See [examples/research-pipeline/](examples/research-pipeline/)
+→ [examples/research-pipeline/](examples/research-pipeline/)
 
 ### Batch Classifier
 
-Parallel batch processing for large datasets.
+Data partitioning → parallel classification → aggregation.
 
 ```
-                        ┌─────────────────┐
-                        │    Manager      │
-                        └────────┬────────┘
-                                 │
-          ┌──────────────────────┼──────────────────────┐
-          ▼                      ▼                      ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Batch Worker   │    │  Batch Worker   │    │  Batch Worker   │
-│   (batch 01)    │    │   (batch 02)    │    │   (batch N)     │
-└────────┬────────┘    └────────┬────────┘    └────────┬────────┘
-         ▼                      ▼                      ▼
-    50 items              50 items              remaining
+┌─────────────┐     ┌─────────────────┐     ┌───────────┐
+│  Partition  │────▶│ Classify ×N     │────▶│ Aggregate │
+│             │     │ (parallel)      │     │           │
+└─────────────┘     └─────────────────┘     └───────────┘
+      │                     │                     │
+      ▼                     ▼                     ▼
+ manifest.yaml       batches/*.yaml         taxonomy.yaml
 ```
 
-| Phase | Input | Output |
-|-------|-------|--------|
-| Partition | data/*.yaml | manifest.yaml |
-| Classify ×N | manifest.batches | batches/{id}/*.yaml |
-| Aggregate | batches/*/*.yaml | taxonomy.yaml |
+**Use when**: Large datasets that can be processed independently per batch.
 
-**Key concepts:** Data partitioning, independent workers, schema validation, result aggregation.
-
-→ See [examples/batch-classifier/](examples/batch-classifier/)
+→ [examples/batch-classifier/](examples/batch-classifier/)
 
 ---
 
-## When to Use Clawdfile
+## Orchestration Patterns
 
-**You need Clawdfile if:**
-- Your agent burned $50 while you were at lunch
-- You can't figure out why the pipeline failed at step 4
-- "It worked yesterday" is your debugging strategy
-- Your project grew and now the LLM loses track
-- You need to hand off agent code to a client who won't learn LangGraph
+### Fan-out (Parallel)
 
-**Good fit:**
-- Multi-step research pipelines
-- Data processing workflows (gather → analyze → generate)
-- Any task with phases and quality gates
-- Projects where intermediate state needs persistence
-- Teams that want shared conventions across agents
+When N tasks are independent:
 
-**Not a good fit:**
-- Simple single-agent tasks
-- Real-time chat applications
-- Tasks without intermediate artifacts
-- When you need sub-millisecond latency
+```markdown
+## Manager Skill Instructions
+
+For each aspect in plan.aspects:
+  Task(
+    subagent_type: "general-purpose",
+    prompt: "Load aspect-researcher. Research: {aspect.name}",
+    run_in_background: true
+  )
+
+Wait for all tasks to complete.
+```
+
+**Key**: All Task calls in ONE message = parallel execution.
+
+### Pipeline (Sequential)
+
+When each phase depends on the previous:
+
+```
+Phase 1 → Gate → Phase 2 → Gate → Phase 3
+   │               │               │
+   ▼               ▼               ▼
+plan.yaml    aspects/*.yaml   synthesis.yaml
+```
+
+Gates = transition conditions:
+```yaml
+gate:
+  type: file_exists
+  condition: "plan.yaml exists"
+
+gate:
+  type: quality_threshold
+  condition: "min 3 aspects completed"
+```
 
 ---
 
-## Adoption Path
+## Skills
 
-### Level 1: Conventions Only
-Use naming conventions and file structure without formal schemas.
+Skills are knowledge libraries, not agents. They inject instructions into context.
+
+```
+Agent A + grounding-protocol = Agent A that doesn't hallucinate
+Agent B + grounding-protocol = Agent B that doesn't hallucinate
+```
+
+| Type | Purpose | Example |
+|------|---------|---------|
+| **atomic** | Single operation | `tier-weights`, `slop-check` |
+| **composite** | Combined operations | `source-evaluation` |
+| **domain** | Knowledge pack | `training-science` |
+| **manager** | Workflow instructions | `manager-research` |
+
+**Manager skill** = orchestration instructions that ROOT executes directly.
+
+---
+
+## Project Structure
+
 ```
 .claude/
-├── agents/          # Your agents
-├── skills/          # Your skills
-└── interfaces/      # Your dashboards
+├── agents/          # Agent definitions (markdown)
+└── skills/          # Skill definitions (markdown)
 artifacts/
-└── {session}/       # Runtime outputs
+└── {session}/       # Runtime outputs (gitignored)
+    ├── state.yaml   # Pipeline state
+    └── ...          # Phase outputs
 ```
 
-### Level 2: Schemas + Templates
-Use templates for consistency. Validate agent and skill structure.
+---
 
-### Level 3: Full Pipeline
-Manager skills for orchestration. Quality gates. State management.
+## Getting Started
+
+1. **Copy a template**
+   ```bash
+   cp examples/research-pipeline/.claude/skills/manager-research.md \
+      .claude/skills/manager-mypipeline.md
+   ```
+
+2. **Edit for your task**
+   - Define phases
+   - Specify gates
+   - List workers
+
+3. **Run**
+   ```
+   /manager-mypipeline "your topic"
+   ```
+
+---
+
+## When to Use
+
+**Good fit**:
+- Multi-step research pipelines
+- Data processing: gather → analyze → generate
+- Workflows with phases and quality gates
+- Overnight / unattended runs
+- Teams sharing agent conventions via git
+
+**Not a good fit**:
+- Simple single-agent tasks
+- Real-time chat applications
+- Tasks without intermediate state
+- Sub-millisecond latency requirements
 
 ---
 
@@ -875,15 +281,32 @@ Manager skills for orchestration. Quality gates. State management.
 2. **Skills are shared libraries** — knowledge reuse
 3. **Files are state** — everything persists to YAML
 4. **Layers have contracts** — L1 constrains L2, L2 feeds L3
-5. **Interface ≠ Data** — schema describes presentation, not content
-6. **Manager = Skill** — workflow instructions for ROOT, not separate agent
+5. **Manager = Skill** — workflow instructions for ROOT
+
+---
+
+## Quick Reference
+
+| Primitive | What It Does |
+|-----------|--------------|
+| `Task(run_in_background: true)` | Spawn parallel worker |
+| `TaskOutput(block: true)` | Wait for worker |
+| `Skill("manager-x")` | Load orchestration instructions |
+| `state.yaml` | Pipeline state for resume |
+
+| Convention | Why |
+|------------|-----|
+| Workers write to files | Context stays small, state persists |
+| Manager is a Skill | ROOT must control spawning |
+| Gates between phases | Quality control, cost control |
+| Session directories | Isolate runs, enable replay |
 
 ---
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).
