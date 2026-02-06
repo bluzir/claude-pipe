@@ -1,4 +1,4 @@
-# Clawdfile
+# claude-pipe
 
 **Operational pipelines for Claude Code**
 
@@ -11,13 +11,13 @@ Claude Code is great for tasks. But when you need multi-step pipelines — resea
 - No coordination for parallel workers
 - No cost control
 
-Clawdfile is a set of conventions that fills these gaps. File-based state you can `cat`. Flat orchestration you can debug. Agents you can `git blame`.
+claude-pipe is a set of conventions that fills these gaps. File-based state you can `cat`. Flat orchestration you can debug. Agents you can `git blame`.
 
 ---
 
 ## How It Works
 
-Claude Code has architectural constraints. Clawdfile works with them:
+Claude Code has architectural constraints. claude-pipe works with them:
 
 | Constraint | Why It Exists | Convention |
 |------------|---------------|------------|
@@ -32,7 +32,7 @@ Claude Code has architectural constraints. Clawdfile works with them:
 
 ## Before / After
 
-| Problem | Without Clawdfile | With Clawdfile |
+| Problem | Without claude-pipe | With claude-pipe |
 |---------|-------------------|----------------|
 | Pipeline fails at step 4 | Re-run from scratch | Resume from step 4 |
 | Agent loops forever | $50 bill | Circuit breaker stops it |
