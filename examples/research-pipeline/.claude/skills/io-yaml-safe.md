@@ -92,10 +92,84 @@ items:
 
 | Error | Action |
 |-------|--------|
-| Invalid YAML structure | Log error, do not write |
+| Invalid YAML structure | Invoke yaml-repair (max 2 attempts) |
 | Schema validation fail | Log specific fields, do not write |
 | Write permission denied | Propagate error to caller |
 | Disk full | Propagate error to caller |
+
+## Self-Correction Loop
+
+When YAML validation fails, invoke the yaml-repair skill:
+
+```
+1. Validate YAML before write
+2. If invalid:
+   a. Extract parse error message
+   b. Invoke yaml-repair skill:
+      Skill(skill: "yaml-repair", args: |
+        broken_yaml: {raw_yaml}
+        parse_error: {error_message}
+        attempt: 1
+      )
+   c. Receive repaired YAML
+   d. Re-validate
+3. If still invalid after repair:
+   a. Invoke yaml-repair again (attempt: 2)
+   b. Re-validate
+4. If still invalid after 2 attempts:
+   a. HALT - do not write
+   b. Report error with both attempts logged
+   c. Suggest manual intervention
+5. If valid → proceed with write
+```
+
+### Repair Integration Flow
+
+```
+Agent writes YAML
+        │
+        ▼
+   Validate Structure
+        │
+   ┌────┴────┐
+   │  Valid  │──────────────────▶ Write File
+   └─────────┘
+        │
+   Invalid (parse error)
+        │
+        ▼
+┌─────────────────────┐
+│   yaml-repair       │
+│   attempt: 1        │
+└──────────┬──────────┘
+           │
+           ▼
+      Re-validate
+           │
+     ┌─────┴─────┐
+     │  Valid    │──────────────▶ Write File
+     └───────────┘
+           │
+     Still invalid
+           │
+           ▼
+┌─────────────────────┐
+│   yaml-repair       │
+│   attempt: 2        │
+└──────────┬──────────┘
+           │
+           ▼
+      Re-validate
+           │
+     ┌─────┴─────┐
+     │  Valid    │──────────────▶ Write File
+     └───────────┘
+           │
+     Still invalid
+           │
+           ▼
+      HALT + Report Error
+```
 
 ## Integration
 
@@ -104,3 +178,4 @@ All agents writing YAML output should:
 2. Use Write tool for output
 3. Follow formatting guidelines
 4. Include metadata section
+5. Trust yaml-repair for automatic correction

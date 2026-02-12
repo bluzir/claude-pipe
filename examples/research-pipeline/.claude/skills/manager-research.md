@@ -64,6 +64,15 @@ settings:
 - aspects.length >= 3
 - Each aspect has >= 2 queries
 
+**Checkpoint:**
+```
+Skill(skill: "phase-checkpoint", args: |
+  session_id: {session}
+  phase_id: 1
+  phase_name: planning
+)
+```
+
 **Next:** Phase 2
 
 ---
@@ -116,6 +125,15 @@ For each task_id in spawned_tasks:
 **Quality Check:**
 - count(aspects/*.yaml) >= plan.min_aspects
 - Each file has findings.length >= 3
+
+**Checkpoint:**
+```
+Skill(skill: "phase-checkpoint", args: |
+  session_id: {session}
+  phase_id: 2
+  phase_name: research
+)
+```
 
 **Next:** Phase 3 (or retry failed aspects)
 
@@ -179,6 +197,15 @@ quality_metrics:
   tier_quality: number    # Weighted avg of source tiers
 ```
 
+**Checkpoint:**
+```
+Skill(skill: "phase-checkpoint", args: |
+  session_id: {session}
+  phase_id: 3
+  phase_name: synthesis
+)
+```
+
 **Next:** Phase 4
 
 ---
@@ -229,6 +256,15 @@ recommendations: string[]
 | WARN | → Phase 5 (with caveats noted) |
 | FAIL | → Report gaps, suggest re-research |
 
+**Checkpoint:**
+```
+Skill(skill: "phase-checkpoint", args: |
+  session_id: {session}
+  phase_id: 4
+  phase_name: quality_gate
+)
+```
+
 **Next:** Phase 5 or halt
 
 ---
@@ -264,6 +300,15 @@ Task(
 ```
 
 **Output:** `artifacts/{session}/FINAL_REPORT.md`
+
+**Checkpoint:**
+```
+Skill(skill: "phase-checkpoint", args: |
+  session_id: {session}
+  phase_id: 5
+  phase_name: report
+)
+```
 
 **Next:** None (terminal)
 
@@ -345,9 +390,21 @@ error: "{error_message}"
 1. Read state.yaml
 2. Find current_phase
 3. If in_progress → resume from there
-4. If failed → offer retry
+4. If failed → offer retry or rollback
 5. Skip completed phases
 ```
+
+### On Rollback
+
+Use resume-checkpoint skill to restore to previous phase:
+```
+Skill(skill: "resume-checkpoint", args: |
+  session_id: {session}
+  target_phase: {phase_to_restore_to}
+)
+```
+
+This restores artifacts and updates state.yaml to continue from the next phase.
 
 ---
 

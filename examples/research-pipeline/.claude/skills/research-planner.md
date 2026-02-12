@@ -105,15 +105,17 @@ settings:
   min_aspects_for_synthesis: 3
 ```
 
-## Example
+## Examples
 
-### Input
+### Example 1: Medium Depth
+
+**Input:**
 ```
 topic: "AI agents orchestration patterns"
 depth: medium
 ```
 
-### Output
+**Output:**
 ```yaml
 topic: "AI agents orchestration patterns"
 depth: medium
@@ -140,11 +142,11 @@ aspects:
       - "shared state vs message passing agents"
 
   - id: "tools"
-    name: "Orchestration Tools"
-    description: "Frameworks and tools: LangGraph, AutoGen, CrewAI, etc."
+    name: "Orchestration Frameworks"
+    description: "Frameworks and tools: LangGraph, AutoGen, CrewAI, Claude Code"
     priority: 2
     queries:
-      - "LangGraph vs AutoGen vs CrewAI comparison 2025"
+      - "LangGraph vs AutoGen vs CrewAI comparison 2026"
       - "multi-agent orchestration frameworks"
       - "AI agent framework comparison"
 
@@ -157,13 +159,148 @@ aspects:
       - "AI agent debugging and observability"
       - "agent coordination problems"
 
-  - id: "future"
-    name: "Future Directions"
-    description: "Emerging patterns and research directions"
+  - id: "implementation"
+    name: "Implementation Patterns"
+    description: "Tool use, prompt chaining, memory, file-based state"
     priority: 3
     queries:
-      - "future of AI agent orchestration"
-      - "emerging multi-agent patterns 2026"
+      - "AI agent tool use patterns production"
+      - "agent memory architecture implementation"
+      - "file-based state management agents"
+
+settings:
+  max_sources_per_aspect: 15
+  min_findings_per_aspect: 5
+  min_aspects_for_synthesis: 3
+```
+
+### Example 2: Quick Depth
+
+**Input:**
+```
+topic: "Effective prompt engineering for code generation"
+depth: quick
+```
+
+**Output:**
+```yaml
+topic: "Effective prompt engineering for code generation"
+depth: quick
+created_at: "2026-02-10T14:00:00Z"
+session_id: "research_20260210_p3q8r"
+
+aspects:
+  - id: "techniques"
+    name: "Structural Techniques"
+    description: "Chain-of-thought, few-shot examples, system prompts, structured output"
+    priority: 1
+    queries:
+      - "chain of thought prompting code generation"
+      - "few-shot examples programming LLM best practices"
+
+  - id: "error-reduction"
+    name: "Error Reduction"
+    description: "Grounding, validation loops, self-correction, hallucination prevention"
+    priority: 1
+    queries:
+      - "reducing hallucination code generation LLM"
+      - "LLM self-correction patterns code output"
+
+  - id: "evaluation"
+    name: "Evaluation Methods"
+    description: "Benchmarks, pass@k, human eval, automated quality metrics"
+    priority: 2
+    queries:
+      - "code generation evaluation benchmarks 2026"
+      - "pass@k metric LLM coding assessment"
+
+settings:
+  max_sources_per_aspect: 15
+  min_findings_per_aspect: 5
+  min_aspects_for_synthesis: 3
+```
+
+### Example 3: Deep Depth
+
+**Input:**
+```
+topic: "PostgreSQL performance tuning for analytics workloads"
+depth: deep
+```
+
+**Output:**
+```yaml
+topic: "PostgreSQL performance tuning for analytics workloads"
+depth: deep
+created_at: "2026-02-12T09:00:00Z"
+session_id: "research_20260212_k4m2n"
+
+aspects:
+  - id: "query-optimization"
+    name: "Query Planning & Optimization"
+    description: "EXPLAIN ANALYZE, planner hints, CTE strategies, join optimization"
+    priority: 1
+    queries:
+      - "PostgreSQL query planner optimization analytics"
+      - "CTE vs subquery performance PostgreSQL"
+      - "PostgreSQL join strategies large tables"
+      - "EXPLAIN ANALYZE interpreting slow queries"
+
+  - id: "indexing"
+    name: "Indexing Strategies"
+    description: "B-tree, GIN, BRIN, partial indexes for analytical queries"
+    priority: 1
+    queries:
+      - "PostgreSQL BRIN index analytics workload"
+      - "partial index strategies Postgres large tables"
+      - "GIN index JSONB performance PostgreSQL"
+      - "covering indexes PostgreSQL optimization"
+
+  - id: "partitioning"
+    name: "Table Partitioning"
+    description: "Range, list, hash partitioning; partition pruning trade-offs"
+    priority: 2
+    queries:
+      - "PostgreSQL table partitioning analytics 2026"
+      - "partition pruning performance PostgreSQL"
+      - "declarative partitioning best practices"
+
+  - id: "configuration"
+    name: "Configuration Tuning"
+    description: "shared_buffers, work_mem, parallel workers, JIT compilation"
+    priority: 2
+    queries:
+      - "PostgreSQL configuration analytics workload"
+      - "parallel query tuning PostgreSQL"
+      - "JIT compilation PostgreSQL when to enable"
+      - "work_mem tuning complex queries"
+
+  - id: "data-modeling"
+    name: "Data Modeling"
+    description: "Columnar storage, materialized views, denormalization strategies"
+    priority: 2
+    queries:
+      - "columnar extension PostgreSQL analytics"
+      - "materialized view refresh strategies production"
+      - "star schema vs flat tables PostgreSQL"
+
+  - id: "monitoring"
+    name: "Monitoring & Profiling"
+    description: "pg_stat_statements, auto_explain, wait events, query fingerprinting"
+    priority: 3
+    queries:
+      - "PostgreSQL performance monitoring production"
+      - "pg_stat_statements analysis slow queries"
+      - "auto_explain configuration PostgreSQL"
+
+  - id: "infrastructure"
+    name: "Hardware & Architecture"
+    description: "Storage selection, read replicas, connection pooling, caching layers"
+    priority: 3
+    queries:
+      - "PostgreSQL hardware sizing analytics workload"
+      - "PgBouncer vs pgcat connection pooling comparison"
+      - "read replica strategies PostgreSQL analytics"
 
 settings:
   max_sources_per_aspect: 15
@@ -174,7 +311,8 @@ settings:
 ## Quality Criteria
 
 - [ ] Aspects are distinct (no major overlap)
-- [ ] Each aspect has 3-5 queries
+- [ ] Each aspect has 2-5 queries (matching depth)
 - [ ] Queries are searchable (not too broad/narrow)
-- [ ] Priorities assigned
+- [ ] Queries include temporal markers for freshness
+- [ ] Priorities assigned (1 = core, 2 = context, 3 = peripheral)
 - [ ] Settings included
