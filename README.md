@@ -161,6 +161,42 @@ Data partitioning → parallel classification → aggregation.
 
 → [examples/batch-classifier/](examples/batch-classifier/)
 
+### Repo-to-Docs
+
+Codebase scanning → parallel module documentation → assembly → docs site.
+
+```
+┌─────────┐     ┌─────────────────┐     ┌──────────┐     ┌─────────┐     ┌──────────┐
+│  Scan   │────▶│ Document ×N     │────▶│ Assemble │────▶│ Quality │────▶│ Emit ×M  │
+│         │     │ (per module)    │     │          │     │  Gate   │     │(per file) │
+└─────────┘     └─────────────────┘     └──────────┘     └─────────┘     └──────────┘
+     │                  │                     │               │               │
+     ▼                  ▼                     ▼               ▼               ▼
+ plan.yaml       modules/*.yaml        assembly.yaml   quality.yaml      docs/*.md
+```
+
+**Pattern**: Subagent = Module (structural partitioning). Double fan-out: once per module, once per output file. Zero external deps.
+
+→ [examples/repo-to-docs/](examples/repo-to-docs/)
+
+### Security Audit
+
+Reconnaissance → parallel vulnerability scanning → triage → severity-ranked report.
+
+```
+┌─────────┐     ┌─────────────────┐     ┌──────────┐     ┌─────────┐     ┌──────────┐
+│  Recon  │────▶│ Scan ×7         │────▶│  Triage  │────▶│ Quality │────▶│  Report  │
+│         │     │(per vuln category)│   │          │     │  Gate   │     │          │
+└─────────┘     └─────────────────┘     └──────────┘     └─────────┘     └──────────┘
+     │                  │                     │               │               │
+     ▼                  ▼                     ▼               ▼               ▼
+ recon.yaml      findings/*.yaml        triage.yaml    quality.yaml   SECURITY_REPORT.md
+```
+
+**Pattern**: Subagent = Category (domain expertise partitioning). Each scanner is an expert in one OWASP category. Zero external deps.
+
+→ [examples/security-audit/](examples/security-audit/)
+
 ---
 
 ## Orchestration Patterns

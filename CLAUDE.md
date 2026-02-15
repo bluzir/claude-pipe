@@ -238,5 +238,7 @@ This enables resume: on re-run, skip completed phases and retry failed workers.
 |----------|---------|------|
 | Research Pipeline | plan → fan-out research → synthesize → quality gate → report | `examples/research-pipeline/` |
 | Batch Classifier | partition → fan-out classify → aggregate → export | `examples/batch-classifier/` |
+| Repo-to-Docs | scan → fan-out document → assemble → quality gate → fan-out emit | `examples/repo-to-docs/` |
+| Security Audit | recon → fan-out scan (by vuln category) → triage → quality gate → report | `examples/security-audit/` |
 
 Start by reading the manager skill in each example — it's the orchestration blueprint.

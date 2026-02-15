@@ -267,3 +267,5 @@ Copy from: `examples/research-pipeline/.claude/skills/io-yaml-safe.md`
 - Read [README.md](README.md) for the conceptual overview
 - Browse `examples/research-pipeline/` for a complex hybrid pipeline
 - Browse `examples/batch-classifier/` for a data-parallel pipeline
+- Browse `examples/repo-to-docs/` for structural partitioning (one subagent per module)
+- Browse `examples/security-audit/` for domain expertise partitioning (one subagent per vuln category)
